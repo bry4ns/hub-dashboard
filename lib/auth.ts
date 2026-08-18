@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
-import { getUserByUsername, hasAnyUser } from './db';
+import { getUserByUsernameAsync, hasAnyUserAsync } from './db';
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'hub-secret-key-super-secure-change-in-prod-1234567890!'

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isSetupCompleted, hashPassword, createSession } from '@/lib/auth';
-import { createUser } from '@/lib/db';
+import { createUserAsync } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   try {

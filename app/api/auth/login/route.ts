@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserByUsername } from '@/lib/db';
+import { getUserByUsernameAsync } from '@/lib/db';
 import { comparePassword, createSession } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
