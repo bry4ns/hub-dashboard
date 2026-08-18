@@ -26,9 +26,11 @@ export async function createSession(username: string): Promise<string> {
     .sign(JWT_SECRET);
 
   const cookieStore = cookies();
+  const isSecure = process.env.COOKIE_SECURE === 'true';
+
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecure,
     sameSite: 'lax',
     path: '/',
     maxAge: 60 * 60 * 24 * 30, // 30 days

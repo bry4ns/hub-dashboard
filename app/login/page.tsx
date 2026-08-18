@@ -67,9 +67,8 @@ export default function LoginPage() {
 
       setSuccess(needsSetup ? '¡Cuenta configurada con éxito! Accediendo...' : '¡Bienvenido! Entrando...');
       setTimeout(() => {
-        router.push('/');
-        router.refresh();
-      }, 700);
+        window.location.href = '/';
+      }, 500);
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error inesperado');
     } finally {

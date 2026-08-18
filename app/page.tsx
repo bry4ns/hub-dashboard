@@ -103,7 +103,7 @@ export default function DashboardPage() {
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
-      router.push('/login');
+      window.location.href = '/login';
     } catch (err) {
       console.error('Logout error:', err);
     }
