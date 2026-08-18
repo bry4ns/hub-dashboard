@@ -16,7 +16,7 @@ export function getPostgresPool(): Pool | null {
         : undefined,
       max: 10,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 5000,
+      connectionTimeoutMillis: 3000,
     });
   }
 
