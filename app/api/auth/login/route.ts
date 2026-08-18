@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserByUsernameAsync } from '@/lib/db';
-import { comparePassword, createSession } from '@/lib/auth';
+import { getUserByUsernameAsync, createUserAsync } from '@/lib/db';
+import { comparePassword, createSession, hashPassword } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,7 +13,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const user = await getUserByUsernameAsync(username.trim());
+    const trimmedUser = username.trim();
+    const envAdminUser = process.env.ADMIN_USERNAME?.trim();
+    const envAdminPass = process.env.ADMIN_PASSWORD;
+
+    // 1. Check if matches ADMIN_USERNAME and ADMIN_PASSWORD from .env
+    if (
+      envAdminUser &&
+      envAdminPass &&
+      trimmedUser.toLowerCase() === envAdminUser.toLowerCase() &&
+      password === envAdminPass
+    ) {
+      // Auto-provision in database if not already present
+      const existingUser = await getUserByUsernameAsync(envAdminUser);
+      if (!existingUser) {
+        const hash = await hashPassword(envAdminPass);
+        await createUserAsync(envAdminUser, hash);
+      }
+
+      await createSession(envAdminUser);
+      return NextResponse.json({
+        success: true,
+        user: { username: envAdminUser },
+      });
+    }
+
+    // 2. Check Database users
+    const user = await getUserByUsernameAsync(trimmedUser);
     if (!user) {
       return NextResponse.json(
         { error: 'Credenciales inválidas.' },

@@ -53,6 +53,12 @@ export async function verifySession(): Promise<{ authenticated: boolean; usernam
       return { authenticated: false };
     }
 
+    // Check if matches DB user or ENV admin user
+    const envAdminUser = process.env.ADMIN_USERNAME?.trim();
+    if (envAdminUser && username.toLowerCase() === envAdminUser.toLowerCase()) {
+      return { authenticated: true, username: envAdminUser };
+    }
+
     const user = await getUserByUsernameAsync(username);
     if (!user) {
       return { authenticated: false };
@@ -70,5 +76,7 @@ export async function deleteSession(): Promise<void> {
 }
 
 export async function isSetupCompleted(): Promise<boolean> {
+  const hasEnvAdmin = Boolean(process.env.ADMIN_USERNAME?.trim() && process.env.ADMIN_PASSWORD?.trim());
+  if (hasEnvAdmin) return true;
   return hasAnyUserAsync();
 }
