@@ -11,6 +11,8 @@ import {
   pgGetCards,
   pgSaveCard,
   pgDeleteCard,
+  pgGetSettings,
+  pgSaveSettings,
 } from './postgres';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -214,15 +216,31 @@ export function getCards(): CardItem[] {
   return getDatabase().cards;
 }
 
-export async function saveCardAsync(cardData: Omit<CardItem, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Promise<CardItem> {
+export async function saveCardAsync(cardData: Partial<CardItem> & { id?: string }): Promise<CardItem> {
   const now = new Date().toISOString();
+  const cards = await getCardsAsync();
+  const existingCard = cardData.id ? cards.find((c) => c.id === cardData.id) : undefined;
   const id = cardData.id || ('card-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7));
 
   const cardToSave: CardItem = {
-    ...cardData,
+    title: cardData.title ?? existingCard?.title ?? 'Nueva Tarjeta',
+    url: cardData.url ?? existingCard?.url ?? '#',
+    description: cardData.description !== undefined ? cardData.description : (existingCard?.description ?? ''),
+    category: cardData.category ?? existingCard?.category ?? 'cat-general',
+    cardSize: cardData.cardSize ?? existingCard?.cardSize ?? 'normal',
+    cardType: cardData.cardType ?? existingCard?.cardType ?? 'app',
+    serverConfig: cardData.serverConfig !== undefined ? cardData.serverConfig : existingCard?.serverConfig,
+    layout: cardData.layout !== undefined ? cardData.layout : existingCard?.layout,
+    iconUrl: cardData.iconUrl !== undefined ? cardData.iconUrl : (existingCard?.iconUrl ?? ''),
+    imageUrl: cardData.imageUrl !== undefined ? cardData.imageUrl : (existingCard?.imageUrl ?? ''),
+    accentColor: cardData.accentColor ?? existingCard?.accentColor ?? '#38bdf8',
+    isPinned: cardData.isPinned !== undefined ? cardData.isPinned : (existingCard?.isPinned ?? false),
+    checkStatus: cardData.checkStatus !== undefined ? cardData.checkStatus : (existingCard?.checkStatus ?? true),
+    healthEndpoint: cardData.healthEndpoint !== undefined ? cardData.healthEndpoint : (existingCard?.healthEndpoint ?? ''),
+    lastStatus: cardData.lastStatus !== undefined ? cardData.lastStatus : existingCard?.lastStatus,
+    order: cardData.order ?? existingCard?.order ?? cards.length,
     id,
-    order: cardData.order ?? 0,
-    createdAt: now,
+    createdAt: existingCard?.createdAt || now,
     updatedAt: now,
   };
 
@@ -235,11 +253,11 @@ export async function saveCardAsync(cardData: Omit<CardItem, 'id' | 'createdAt' 
   }
 
   // Also sync locally
-  saveCard(cardData);
+  saveCard(cardToSave);
   return cardToSave;
 }
 
-export function saveCard(cardData: Omit<CardItem, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): CardItem {
+export function saveCard(cardData: Partial<CardItem> & { id?: string }): CardItem {
   const db = getDatabase();
   const now = new Date().toISOString();
 
@@ -259,7 +277,21 @@ export function saveCard(cardData: Omit<CardItem, 'id' | 'createdAt' | 'updatedA
   }
 
   const newCard: CardItem = {
-    ...cardData,
+    title: cardData.title || 'Nueva Tarjeta',
+    url: cardData.url || '#',
+    description: cardData.description || '',
+    category: cardData.category || 'cat-general',
+    cardSize: cardData.cardSize || 'normal',
+    cardType: cardData.cardType || 'app',
+    serverConfig: cardData.serverConfig,
+    layout: cardData.layout,
+    iconUrl: cardData.iconUrl || '',
+    imageUrl: cardData.imageUrl || '',
+    accentColor: cardData.accentColor || '#38bdf8',
+    isPinned: cardData.isPinned || false,
+    checkStatus: cardData.checkStatus !== undefined ? cardData.checkStatus : true,
+    healthEndpoint: cardData.healthEndpoint || '',
+    lastStatus: cardData.lastStatus,
     id: 'card-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
     order: cardData.order ?? db.cards.length,
     createdAt: now,
@@ -385,9 +417,36 @@ export function getSettings() {
   return getDatabase().settings;
 }
 
+export async function getSettingsAsync(): Promise<DashboardData['settings']> {
+  if (isPostgresEnabled()) {
+    try {
+      const pgSettings = await pgGetSettings();
+      if (pgSettings) return pgSettings;
+    } catch (e) {
+      console.warn('Postgres error in getSettingsAsync:', e);
+    }
+  }
+  return getSettings();
+}
+
 export function updateSettings(settings: Partial<DashboardData['settings']>) {
   const db = getDatabase();
   db.settings = { ...db.settings, ...settings };
   saveDatabase(db);
   return db.settings;
+}
+
+export async function updateSettingsAsync(settings: Partial<DashboardData['settings']>): Promise<DashboardData['settings']> {
+  const current = await getSettingsAsync();
+  const updated = { ...current, ...settings };
+
+  if (isPostgresEnabled()) {
+    try {
+      await pgSaveSettings(updated);
+    } catch (e) {
+      console.warn('Postgres error in updateSettingsAsync:', e);
+    }
+  }
+
+  return updateSettings(settings);
 }

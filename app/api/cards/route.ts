@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySession } from '@/lib/auth';
-import { getCardsAsync, saveCardAsync, getCategoriesAsync, getSettings } from '@/lib/db';
+import { getCardsAsync, saveCardAsync, getCategoriesAsync, getSettingsAsync } from '@/lib/db';
 
 export async function GET() {
   const session = await verifySession();
@@ -10,7 +10,7 @@ export async function GET() {
 
   const cards = await getCardsAsync();
   const categories = await getCategoriesAsync();
-  const settings = getSettings();
+  const settings = await getSettingsAsync();
 
   return NextResponse.json({ cards, categories, settings });
 }

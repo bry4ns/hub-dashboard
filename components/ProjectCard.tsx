@@ -51,11 +51,14 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
       <BeszelMultiNodeCard
         card={card}
         categories={categories}
+        viewMode={viewMode}
         onEdit={onEdit}
         onDelete={onDelete}
         onTogglePin={onTogglePin}
         onToggleSize={onToggleSize}
         onRefreshStatus={onRefreshStatus}
+        onCardDragStart={onCardDragStart}
+        onCardResizeStart={onCardResizeStart}
         openInNewTab={openInNewTab}
       />
     );
@@ -67,11 +70,14 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
       <ServerStatsCard
         card={card}
         categories={categories}
+        viewMode={viewMode}
         onEdit={onEdit}
         onDelete={onDelete}
         onTogglePin={onTogglePin}
         onToggleSize={onToggleSize}
         onRefreshStatus={onRefreshStatus}
+        onCardDragStart={onCardDragStart}
+        onCardResizeStart={onCardResizeStart}
         openInNewTab={openInNewTab}
       />
     );
@@ -102,7 +108,8 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
     if (
       (e.target as HTMLElement).closest('button') ||
       (e.target as HTMLElement).closest('.menu-container') ||
-      (e.target as HTMLElement).closest('.resize-handle')
+      (e.target as HTMLElement).closest('.resize-handle') ||
+      (e.target as HTMLElement).closest('.drag-handle')
     ) {
       return;
     }
@@ -226,7 +233,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
                   e.stopPropagation();
                   onCardDragStart(e, card);
                 }}
-                className="cursor-grab active:cursor-grabbing p-1 text-slate-500 hover:text-sky-400 -ml-1 transition-colors"
+                className="drag-handle cursor-grab active:cursor-grabbing p-1 text-slate-500 hover:text-sky-400 -ml-1 transition-colors"
                 title="Mantén clic para arrastrar por el canvas"
               >
                 <GripHorizontal className="w-4 h-4" />

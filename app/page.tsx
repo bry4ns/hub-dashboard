@@ -30,19 +30,31 @@ export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [canvasZoom, setCanvasZoom] = useState<number>(1.0);
 
-  // Drag & Resize State
-  const [dragState, setDragState] = useState<{
+  // Drag & Resize State + Ref for reliable live updates
+  const dragRef = useRef<{
     type: 'move' | 'resize' | null;
     cardId: string | null;
     startX: number;
     startY: number;
     initialLayout: CardLayout;
+    currentLayout: CardLayout;
+    hasMoved: boolean;
   }>({
     type: null,
     cardId: null,
     startX: 0,
     startY: 0,
     initialLayout: { x: 0, y: 0, w: 320, h: 220 },
+    currentLayout: { x: 0, y: 0, w: 320, h: 220 },
+    hasMoved: false,
+  });
+
+  const [dragState, setDragState] = useState<{
+    type: 'move' | 'resize' | null;
+    cardId: string | null;
+  }>({
+    type: null,
+    cardId: null,
   });
 
   // Modals
@@ -245,75 +257,124 @@ export default function DashboardPage() {
     }
   };
 
+  // Settings Change Handlers (persist viewMode & zoom)
+  const handleViewModeChange = async (mode: ViewMode) => {
+    setViewMode(mode);
+    try {
+      await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ viewMode: mode }),
+      });
+    } catch (err) {
+      console.error('Error saving viewMode:', err);
+    }
+  };
+
+  const handleZoomChange = async (newZoom: number) => {
+    setCanvasZoom(newZoom);
+    try {
+      await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ canvasZoom: newZoom }),
+      });
+    } catch (err) {
+      console.error('Error saving zoom:', err);
+    }
+  };
+
   // Canvas Drag & Resize Mouse Handlers
   const handleCardDragStart = (e: React.MouseEvent, card: CardItem) => {
-    const layout = card.layout || { x: 50, y: 50, w: 320, h: 220 };
-    setDragState({
+    e.preventDefault();
+    const layout = card.layout || {
+      x: 50,
+      y: 50,
+      w: card.cardSize === 'wide' || card.cardSize === 'large' ? 620 : 320,
+      h: card.cardSize === 'large' ? 420 : 230,
+    };
+    dragRef.current = {
       type: 'move',
       cardId: card.id,
       startX: e.clientX,
       startY: e.clientY,
       initialLayout: { ...layout },
+      currentLayout: { ...layout },
+      hasMoved: false,
+    };
+    setDragState({
+      type: 'move',
+      cardId: card.id,
     });
   };
 
   const handleCardResizeStart = (e: React.MouseEvent, card: CardItem) => {
+    e.preventDefault();
     const layout = card.layout || {
       x: 0,
       y: 0,
-      w: card.cardSize === 'wide' ? 620 : 320,
-      h: card.cardSize === 'large' ? 420 : 220,
+      w: card.cardSize === 'wide' || card.cardSize === 'large' ? 620 : 320,
+      h: card.cardSize === 'large' ? 420 : 230,
     };
-    setDragState({
+    dragRef.current = {
       type: 'resize',
       cardId: card.id,
       startX: e.clientX,
       startY: e.clientY,
       initialLayout: { ...layout },
+      currentLayout: { ...layout },
+      hasMoved: false,
+    };
+    setDragState({
+      type: 'resize',
+      cardId: card.id,
     });
   };
 
   // Global mouse move listener for smooth dragging/resizing with zoom compensation
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!dragState.type || !dragState.cardId) return;
+      const cur = dragRef.current;
+      if (!cur.type || !cur.cardId) return;
 
-      const deltaX = (e.clientX - dragState.startX) / canvasZoom;
-      const deltaY = (e.clientY - dragState.startY) / canvasZoom;
+      const deltaX = (e.clientX - cur.startX) / canvasZoom;
+      const deltaY = (e.clientY - cur.startY) / canvasZoom;
 
-      if (dragState.type === 'move') {
-        const newX = Math.max(0, Math.round(dragState.initialLayout.x + deltaX));
-        const newY = Math.max(0, Math.round(dragState.initialLayout.y + deltaY));
+      if (Math.abs(deltaX) > 1 || Math.abs(deltaY) > 1) {
+        cur.hasMoved = true;
+      }
+
+      if (cur.type === 'move') {
+        const newX = Math.max(0, Math.round(cur.initialLayout.x + deltaX));
+        const newY = Math.max(0, Math.round(cur.initialLayout.y + deltaY));
+        const updatedLayout: CardLayout = {
+          ...cur.initialLayout,
+          x: newX,
+          y: newY,
+        };
+        cur.currentLayout = updatedLayout;
 
         setCards((prev) =>
           prev.map((c) =>
-            c.id === dragState.cardId
-              ? {
-                  ...c,
-                  layout: {
-                    ...(c.layout || dragState.initialLayout),
-                    x: newX,
-                    y: newY,
-                  },
-                }
+            c.id === cur.cardId
+              ? { ...c, layout: updatedLayout }
               : c
           )
         );
-      } else if (dragState.type === 'resize') {
-        const newW = Math.max(240, Math.round(dragState.initialLayout.w + deltaX));
-        const newH = Math.max(140, Math.round(dragState.initialLayout.h + deltaY));
+      } else if (cur.type === 'resize') {
+        const newW = Math.max(260, Math.round(cur.initialLayout.w + deltaX));
+        const newH = Math.max(160, Math.round(cur.initialLayout.h + deltaY));
+        const updatedLayout: CardLayout = {
+          ...cur.initialLayout,
+          w: newW,
+          h: newH,
+        };
+        cur.currentLayout = updatedLayout;
 
         setCards((prev) =>
           prev.map((c) =>
-            c.id === dragState.cardId
-              ? {
-                  ...c,
-                  layout: {
-                    ...(c.layout || dragState.initialLayout),
-                    w: newW,
-                    h: newH,
-                  },
-                }
+            c.id === cur.cardId
+              ? { ...c, layout: updatedLayout }
               : c
           )
         );
@@ -321,25 +382,35 @@ export default function DashboardPage() {
     };
 
     const handleMouseUp = async () => {
-      if (!dragState.type || !dragState.cardId) return;
+      const cur = dragRef.current;
+      if (!cur.type || !cur.cardId) return;
 
-      const cardToPersist = cards.find((c) => c.id === dragState.cardId);
-      const cardId = dragState.cardId;
+      const cardId = cur.cardId;
+      const finalLayout = { ...cur.currentLayout };
+      const hasMoved = cur.hasMoved;
 
-      setDragState({
+      // Reset drag state
+      dragRef.current = {
         type: null,
         cardId: null,
         startX: 0,
         startY: 0,
         initialLayout: { x: 0, y: 0, w: 320, h: 220 },
+        currentLayout: { x: 0, y: 0, w: 320, h: 220 },
+        hasMoved: false,
+      };
+
+      setDragState({
+        type: null,
+        cardId: null,
       });
 
-      if (cardToPersist && cardToPersist.layout) {
+      if (hasMoved) {
         try {
           await fetch(`/api/cards/${cardId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ layout: cardToPersist.layout }),
+            body: JSON.stringify({ layout: finalLayout }),
           });
         } catch (err) {
           console.error('Error saving card layout:', err);
@@ -355,7 +426,7 @@ export default function DashboardPage() {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [dragState, canvasZoom, cards]);
+  }, [dragState.type, canvasZoom]);
 
   // Auto Arrange in Canvas Mode
   const handleAutoArrangeCanvas = async () => {
@@ -584,9 +655,9 @@ export default function DashboardPage() {
       {/* Floating Canvas & Zoom Controls */}
       <CanvasControls
         zoom={canvasZoom}
-        onZoomChange={setCanvasZoom}
+        onZoomChange={handleZoomChange}
         viewMode={viewMode}
-        onViewModeChange={setViewMode}
+        onViewModeChange={handleViewModeChange}
         onAutoArrange={handleAutoArrangeCanvas}
       />
 

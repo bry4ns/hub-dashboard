@@ -18,18 +18,22 @@ import {
   Container,
   Thermometer,
   Zap,
+  GripHorizontal,
 } from 'lucide-react';
-import { CardItem, Category, SystemMetrics } from '@/types';
+import { CardItem, Category, SystemMetrics, ViewMode } from '@/types';
 import { StatusBadge } from './StatusBadge';
 
 interface ServerStatsCardProps {
   card: CardItem;
   categories: Category[];
+  viewMode?: ViewMode;
   onEdit: (card: CardItem) => void;
   onDelete: (id: string) => void;
   onTogglePin: (card: CardItem) => void;
   onToggleSize: (card: CardItem) => void;
   onRefreshStatus: (id: string) => Promise<void>;
+  onCardDragStart?: (e: React.MouseEvent, card: CardItem) => void;
+  onCardResizeStart?: (e: React.MouseEvent, card: CardItem) => void;
   openInNewTab?: boolean;
 }
 
@@ -54,11 +58,14 @@ function formatUptime(seconds?: number): string {
 export const ServerStatsCard: React.FC<ServerStatsCardProps> = ({
   card,
   categories,
+  viewMode = 'grid',
   onEdit,
   onDelete,
   onTogglePin,
   onToggleSize,
   onRefreshStatus,
+  onCardDragStart,
+  onCardResizeStart,
   openInNewTab = true,
 }) => {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(
@@ -182,7 +189,12 @@ export const ServerStatsCard: React.FC<ServerStatsCardProps> = ({
   }, [showMenu]);
 
   const handleCardClick = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('.menu-container')) {
+    if (
+      (e.target as HTMLElement).closest('button') ||
+      (e.target as HTMLElement).closest('.menu-container') ||
+      (e.target as HTMLElement).closest('.resize-handle') ||
+      (e.target as HTMLElement).closest('.drag-handle')
+    ) {
       return;
     }
     if (card.url && card.url !== '#') {
@@ -205,24 +217,58 @@ export const ServerStatsCard: React.FC<ServerStatsCardProps> = ({
 
   const isServerUp = beszelExtra?.status ? beszelExtra.status === 'up' : true;
 
+  const canvasStyle: React.CSSProperties =
+    viewMode === 'canvas' && card.layout
+      ? {
+          position: 'absolute',
+          left: `${card.layout.x}px`,
+          top: `${card.layout.y}px`,
+          width: `${card.layout.w}px`,
+          height: card.layout.h ? `${card.layout.h}px` : undefined,
+          borderTop: `3px solid ${card.accentColor || (isBeszel ? '#818cf8' : '#10b981')}`,
+        }
+      : {
+          borderTop: `3px solid ${card.accentColor || (isBeszel ? '#818cf8' : '#10b981')}`,
+        };
+
   return (
     <div
       onClick={handleCardClick}
+      style={canvasStyle}
       className={`group relative flex flex-col justify-between rounded-2xl glass-panel glass-panel-hover overflow-hidden cursor-pointer transition-all duration-300 border border-slate-850 hover:shadow-2xl ${
         isBeszel
           ? 'hover:border-indigo-500/50 hover:shadow-indigo-950/25'
           : 'hover:border-emerald-500/50 hover:shadow-emerald-950/20'
       } ${
-        isLarge ? 'col-span-1 sm:col-span-2 row-span-2' : isWide ? 'col-span-1 sm:col-span-2' : 'col-span-1'
+        viewMode === 'grid'
+          ? isLarge
+            ? 'col-span-1 sm:col-span-2 row-span-2'
+            : isWide
+            ? 'col-span-1 sm:col-span-2'
+            : 'col-span-1'
+          : ''
       } ${card.isPinned ? 'ring-1 ring-indigo-500/40' : ''}`}
-      style={{
-        borderTop: `3px solid ${card.accentColor || (isBeszel ? '#818cf8' : '#10b981')}`,
-      }}
     >
       <div className="p-5 flex-1 flex flex-col">
         {/* Header */}
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex items-center gap-3">
+            {/* Canvas Drag Handle */}
+            {viewMode === 'canvas' && onCardDragStart && (
+              <div
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  onCardDragStart(e, card);
+                }}
+                className={`drag-handle cursor-grab active:cursor-grabbing p-1 -ml-1 transition-colors ${
+                  isBeszel ? 'text-slate-500 hover:text-indigo-400' : 'text-slate-500 hover:text-emerald-400'
+                }`}
+                title="Arrastrar tarjeta por el canvas"
+              >
+                <GripHorizontal className="w-4 h-4" />
+              </div>
+            )}
+
             <div
               className={`w-10 h-10 rounded-xl p-2 flex items-center justify-center flex-shrink-0 shadow-inner transition-colors ${
                 isBeszel
@@ -513,6 +559,22 @@ export const ServerStatsCard: React.FC<ServerStatsCardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Resize Handle for Canvas Mode */}
+      {viewMode === 'canvas' && onCardResizeStart && (
+        <div
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            onCardResizeStart(e, card);
+          }}
+          className="resize-handle absolute bottom-0 right-0 w-5 h-5 cursor-se-resize flex items-end justify-end p-1 text-slate-600 hover:text-indigo-400 group-hover:text-slate-400 transition-colors z-20"
+          title="Agarrar y arrastrar para redimensionar"
+        >
+          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M21 15L15 21M21 8L8 21" />
+          </svg>
+        </div>
+      )}
     </div>
   );
 };

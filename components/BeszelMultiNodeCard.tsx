@@ -19,17 +19,20 @@ import {
   HardDrive,
   Grid,
 } from 'lucide-react';
-import { CardItem, Category, BeszelDesign } from '@/types';
+import { CardItem, Category, BeszelDesign, ViewMode } from '@/types';
 import { StatusBadge } from './StatusBadge';
 
 interface BeszelMultiNodeCardProps {
   card: CardItem;
   categories: Category[];
+  viewMode?: ViewMode;
   onEdit: (card: CardItem) => void;
   onDelete: (id: string) => void;
   onTogglePin: (card: CardItem) => void;
   onToggleSize?: (card: CardItem) => void;
   onRefreshStatus: (id: string) => Promise<void>;
+  onCardDragStart?: (e: React.MouseEvent, card: CardItem) => void;
+  onCardResizeStart?: (e: React.MouseEvent, card: CardItem) => void;
   openInNewTab?: boolean;
 }
 
@@ -43,11 +46,14 @@ function formatBytes(bytes?: number): string {
 export const BeszelMultiNodeCard: React.FC<BeszelMultiNodeCardProps> = ({
   card,
   categories,
+  viewMode = 'grid',
   onEdit,
   onDelete,
   onTogglePin,
   onToggleSize,
   onRefreshStatus,
+  onCardDragStart,
+  onCardResizeStart,
   openInNewTab = true,
 }) => {
   const [systems, setSystems] = useState<any[]>([]);
@@ -104,19 +110,45 @@ export const BeszelMultiNodeCard: React.FC<BeszelMultiNodeCardProps> = ({
 
   const category = categories.find((c) => c.id === card.category);
 
+  const canvasStyle: React.CSSProperties =
+    viewMode === 'canvas' && card.layout
+      ? {
+          position: 'absolute',
+          left: `${card.layout.x}px`,
+          top: `${card.layout.y}px`,
+          width: `${card.layout.w}px`,
+          height: card.layout.h ? `${card.layout.h}px` : undefined,
+          borderTop: `3px solid ${card.accentColor || '#818cf8'}`,
+        }
+      : {
+          borderTop: `3px solid ${card.accentColor || '#818cf8'}`,
+        };
+
   return (
     <div
-      className={`group relative flex flex-col justify-between rounded-2xl glass-panel glass-panel-hover overflow-hidden transition-all duration-300 border border-slate-800 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-950/20 col-span-1 sm:col-span-2 lg:col-span-2 row-span-2 ${
-        card.isPinned ? 'ring-1 ring-indigo-500/40' : ''
-      }`}
-      style={{
-        borderTop: `3px solid ${card.accentColor || '#818cf8'}`,
-      }}
+      style={canvasStyle}
+      className={`group relative flex flex-col justify-between rounded-2xl glass-panel glass-panel-hover overflow-hidden transition-all duration-300 border border-slate-800 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-950/20 ${
+        viewMode === 'grid' ? 'col-span-1 sm:col-span-2 lg:col-span-2 row-span-2' : ''
+      } ${card.isPinned ? 'ring-1 ring-indigo-500/40' : ''}`}
     >
       <div className="p-5 flex-1 flex flex-col">
         {/* Header with Server Switcher Tabs */}
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex items-center gap-3">
+            {/* Canvas Drag Handle */}
+            {viewMode === 'canvas' && onCardDragStart && (
+              <div
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  onCardDragStart(e, card);
+                }}
+                className="drag-handle cursor-grab active:cursor-grabbing p-1 text-slate-500 hover:text-indigo-400 -ml-1 transition-colors"
+                title="Arrastrar tarjeta por el canvas"
+              >
+                <Grid className="w-4 h-4" />
+              </div>
+            )}
+
             <div className="w-10 h-10 rounded-xl bg-indigo-950/70 border border-indigo-500/40 p-2 flex items-center justify-center flex-shrink-0 text-indigo-400">
               <Zap className="w-5 h-5" />
             </div>
@@ -379,6 +411,22 @@ export const BeszelMultiNodeCard: React.FC<BeszelMultiNodeCardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Resize Handle for Canvas Mode */}
+      {viewMode === 'canvas' && onCardResizeStart && (
+        <div
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            onCardResizeStart(e, card);
+          }}
+          className="resize-handle absolute bottom-0 right-0 w-5 h-5 cursor-se-resize flex items-end justify-end p-1 text-slate-600 hover:text-indigo-400 group-hover:text-slate-400 transition-colors z-20"
+          title="Agarrar y arrastrar para redimensionar"
+        >
+          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M21 15L15 21M21 8L8 21" />
+          </svg>
+        </div>
+      )}
     </div>
   );
 };

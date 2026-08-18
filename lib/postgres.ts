@@ -252,3 +252,46 @@ export async function pgDeleteCard(id: string): Promise<boolean> {
   const res = await p.query('DELETE FROM hub_cards WHERE id = $1', [id]);
   return (res.rowCount ?? 0) > 0;
 }
+
+export async function pgGetSettings(): Promise<DashboardData['settings'] | null> {
+  const p = getPostgresPool();
+  if (!p) return null;
+  await initPostgresTables();
+
+  const res = await p.query(
+    'SELECT site_title as "siteTitle", theme, auto_check_interval_minutes as "autoCheckIntervalMinutes", open_in_new_tab as "openInNewTab", show_cluster_summary as "showClusterSummary", view_mode as "viewMode", canvas_zoom as "canvasZoom" FROM hub_settings WHERE id = $1',
+    ['default']
+  );
+  return res.rows[0] || null;
+}
+
+export async function pgSaveSettings(settings: DashboardData['settings']): Promise<DashboardData['settings']> {
+  const p = getPostgresPool();
+  if (!p) return settings;
+  await initPostgresTables();
+
+  await p.query(`
+    INSERT INTO hub_settings (id, site_title, theme, auto_check_interval_minutes, open_in_new_tab, show_cluster_summary, view_mode, canvas_zoom)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    ON CONFLICT (id) DO UPDATE SET
+      site_title = EXCLUDED.site_title,
+      theme = EXCLUDED.theme,
+      auto_check_interval_minutes = EXCLUDED.auto_check_interval_minutes,
+      open_in_new_tab = EXCLUDED.open_in_new_tab,
+      show_cluster_summary = EXCLUDED.show_cluster_summary,
+      view_mode = EXCLUDED.view_mode,
+      canvas_zoom = EXCLUDED.canvas_zoom;
+  `, [
+    'default',
+    settings.siteTitle || 'My Dev & App Hub',
+    settings.theme || 'dark',
+    settings.autoCheckIntervalMinutes || 5,
+    settings.openInNewTab !== false,
+    settings.showClusterSummary !== false,
+    settings.viewMode || 'grid',
+    settings.canvasZoom || 1.0,
+  ]);
+
+  return settings;
+}
+
