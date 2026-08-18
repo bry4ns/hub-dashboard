@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  hub-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hub-dashboard
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - JWT_SECRET=super-secret-hub-session-key-change-in-production-123456789!
+      - DATABASE_URL=postgresql://postgres:postgres_password@db:5432/hub_dashboard?sslmode=disable
+    volumes:
+      - hub_data:/app/data
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16-alpine
+    container_name: hub-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_DB: hub_dashboard
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  hub_data:
+  pg_data:
