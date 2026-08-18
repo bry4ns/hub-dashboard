@@ -1,0 +1,115 @@
+{
+  "users": [
+    {
+      "id": "user-1787086859327-tbrq1",
+      "username": "admin",
+      "passwordHash": "$2a$10$mAfFLLWzpQlO.vRi28300.ffLGqTP6zMS.tr4RDlLfDbtwNXgU9N.",
+      "createdAt": "2026-08-18T21:00:59.327Z",
+      "updatedAt": "2026-08-18T21:00:59.327Z"
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat-general",
+      "name": "General",
+      "order": 0
+    },
+    {
+      "id": "cat-dev",
+      "name": "Desarrollo & Apps",
+      "order": 1
+    },
+    {
+      "id": "cat-apis",
+      "name": "APIs & Servicios",
+      "order": 2
+    },
+    {
+      "id": "cat-tools",
+      "name": "Herramientas",
+      "order": 3
+    }
+  ],
+  "cards": [
+    {
+      "id": "demo-1",
+      "title": "GitHub",
+      "url": "https://github.com",
+      "description": "Plataforma de desarrollo y alojamiento de repositorios",
+      "category": "cat-dev",
+      "iconUrl": "https://github.githubassets.com/favicons/favicon.png",
+      "imageUrl": "https://github.githubassets.com/images/modules/site/social-cards/github-social.png",
+      "accentColor": "#24292e",
+      "isPinned": true,
+      "checkStatus": true,
+      "order": 0,
+      "createdAt": "2026-08-18T20:59:20.742Z",
+      "updatedAt": "2026-08-18T20:59:20.744Z",
+      "lastStatus": {
+        "isOnline": true,
+        "statusCode": 200,
+        "statusText": "200 OK",
+        "latencyMs": 365,
+        "lastChecked": "2026-08-18T21:19:33.213Z"
+      }
+    },
+    {
+      "id": "demo-2",
+      "title": "Vercel",
+      "url": "https://vercel.com",
+      "description": "Despliegue y hosting de aplicaciones frontend y serverless",
+      "category": "cat-dev",
+      "iconUrl": "https://assets.vercel.com/image/upload/front/favicon/vercel/favicon.ico",
+      "accentColor": "#000000",
+      "isPinned": false,
+      "checkStatus": true,
+      "order": 1,
+      "createdAt": "2026-08-18T20:59:20.745Z",
+      "updatedAt": "2026-08-18T20:59:20.745Z",
+      "lastStatus": {
+        "isOnline": true,
+        "statusCode": 200,
+        "statusText": "200 OK",
+        "latencyMs": 378,
+        "lastChecked": "2026-08-18T21:19:33.215Z"
+      }
+    },
+    {
+      "title": "Beszel Server",
+      "url": "https://status.sa.perhost.app/system/SA-CL-PERHOST",
+      "description": "",
+      "category": "cat-general",
+      "cardSize": "large",
+      "cardType": "beszel",
+      "serverConfig": {
+        "serverType": "beszel",
+        "endpoint": "https://status.sa.perhost.app/",
+        "systemId": "0fhibcoc7a361op",
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb2xsZWN0aW9uSWQiOiJfcGJfdXNlcnNfYXV0aF8iLCJleHAiOjE3ODc2OTIyNzEsImlkIjoibnZ2OWNzcGtxZWJ4cTlxIiwicmVmcmVzaGFibGUiOnRydWUsInR5cGUiOiJhdXRoIn0.k6nXq0lKfzRr9vUdUrCx3J4LA8A6kd6KYcwzPLRzWN4"
+      },
+      "iconUrl": "",
+      "imageUrl": "",
+      "accentColor": "#818cf8",
+      "isPinned": false,
+      "checkStatus": true,
+      "healthEndpoint": "",
+      "order": 0,
+      "id": "card-1787087477225-cd3p7",
+      "createdAt": "2026-08-18T21:11:17.225Z",
+      "updatedAt": "2026-08-18T21:11:35.392Z",
+      "lastStatus": {
+        "isOnline": true,
+        "statusCode": 200,
+        "statusText": "200 OK",
+        "latencyMs": 161,
+        "lastChecked": "2026-08-18T21:19:33.216Z"
+      }
+    }
+  ],
+  "settings": {
+    "siteTitle": "My Dev & App Hub",
+    "theme": "dark",
+    "autoCheckIntervalMinutes": 5,
+    "openInNewTab": true
+  }
+}
